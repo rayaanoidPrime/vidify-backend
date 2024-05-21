@@ -14,4 +14,4 @@ app.use("/main", mainRouter);
 
 app.get("/", (req, res) => res.json({ msg: `Yes I'm Alive!` }));
 
-app.listen(port, () => console.log(`Swiftube server is listening on ${port}`));
+app.listen(port, () => console.log(`vidify server is listening on ${port}`));

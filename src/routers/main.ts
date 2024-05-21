@@ -25,6 +25,7 @@ import {
 import { DEMO_MODE } from "../lib/constants";
 import { checkModerationFlag } from "../lib/openai_utils";
 import { getPrompts } from "../lib/upstash";
+import { anthropicCheckModeration } from "../lib/anthropic";
 dotenv.config();
 
 const router = express.Router();
@@ -70,7 +71,7 @@ router.post("/getdata", async (req, res) => {
     initialVideoData.prompt
   );
 
-  const { isFlagged } = await checkModerationFlag(metadataPrompt);
+  const { isFlagged } = await anthropicCheckModeration(metadataPrompt);
   console.log(`[1] Prompt is ${isFlagged ? "NOT SAFE ❌!" : "SAFE ✅"}.`);
   if (isFlagged)
     return await updateVideoInDB({
@@ -185,40 +186,37 @@ router.post("/getdata", async (req, res) => {
     /**
      * * Step 3: Get final processed data for intro, each section, and table. */
 
-    const [videoSections, videoIntro, videoOutro, finalTable] =
-      await Promise.all([
-        getVideoSectionsMedia({
-          metadata: videoMetadata,
-          titles: videoTitles.titles,
-          talkingPoints: videoTalkingPoints.talkingPoints,
-          fileDirectory,
-        }),
+    const videoSections = await getVideoSectionsMedia({
+      metadata: videoMetadata,
+      titles: videoTitles.titles,
+      talkingPoints: videoTalkingPoints.talkingPoints,
+      fileDirectory,
+    });
 
-        getVideoIntro(
-          {
-            formattedContentsOfVideo: talkingPointsAsString,
-            metadata: videoMetadata,
-            titles: videoTitles,
-            fileDirectory,
-          },
-          userId
-        ),
+    const videoIntro = await getVideoIntro(
+      {
+        formattedContentsOfVideo: talkingPointsAsString,
+        metadata: videoMetadata,
+        titles: videoTitles,
+        fileDirectory,
+      },
+      userId
+    );
 
-        getVideoOutro(
-          {
-            formattedContentsOfVideo: talkingPointsAsString,
-            metadata: videoMetadata,
-            fileDirectory,
-          },
-          userId
-        ),
+    const videoOutro = await getVideoOutro(
+      {
+        formattedContentsOfVideo: talkingPointsAsString,
+        metadata: videoMetadata,
+        fileDirectory,
+      },
+      userId
+    );
 
-        getVideoTableMedia({
-          fileDirectory,
-          metadata: videoMetadata,
-          tableData,
-        }),
-      ]);
+    const finalTable = await getVideoTableMedia({
+      fileDirectory,
+      metadata: videoMetadata,
+      tableData,
+    });
 
     const finalVideo: FinalVideoDataFromServer = {
       ...initialVideoData,

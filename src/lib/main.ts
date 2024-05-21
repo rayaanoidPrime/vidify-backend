@@ -12,8 +12,10 @@ import {
   VideoSection,
   VideoTable,
   VideoOutro,
+  CustomImageDataFromGoogleSerpapi,
 } from "./interfaces";
 import { createTTSAudio } from "./textToSpeech";
+import { getGoogleImages } from "./serpapi/images";
 
 export async function getVideoSectionsMedia(props: {
   metadata: VideoMetadata;
@@ -27,7 +29,7 @@ export async function getVideoSectionsMedia(props: {
   // Get all images one by one (Thanks Azure Ratelimits on Free tier!)
   const allRelevantImages: CustomImageDataFromBing[][] = [];
   for (const title of props.titles) {
-    const imgsForVideoSection = (await getBingImages({
+    const imgsForVideoSection = (await getGoogleImages({
       query: title,
       count: 3,
     })) as CustomImageDataFromBing[];
@@ -39,26 +41,19 @@ export async function getVideoSectionsMedia(props: {
     async (talkingPoint, index) => {
       const text = `${props.titles[index]}. ${talkingPoint}`;
 
-      const [
-        maleVoice,
-        femaleVoice,
-        // relevantImages
-      ] = await Promise.all([
-        // Create male and female voice audios
-        createTTSAudio({
-          text,
-          gender: "male",
-          fileDirectory: props.fileDirectory,
-        }),
-        createTTSAudio({
-          text,
-          gender: "female",
-          fileDirectory: props.fileDirectory,
-        }),
+      const maleVoice = await createTTSAudio({
+        text,
+        gender: "male",
+        fileDirectory: props.fileDirectory,
+      });
+      const femaleVoice = await createTTSAudio({
+        text,
+        gender: "female",
+        fileDirectory: props.fileDirectory,
+      });
 
-        // get 3 images for point
-        // getBingImages({ query: props.metadata.topic, count: 3 }),
-      ]);
+      // get 3 images for point
+      // getBingImages({ query: props.metadata.topic, count: 3 }),
 
       return {
         talkingPoint,
@@ -132,7 +127,7 @@ export async function getVideoIntro(
       }),
 
       // get 3 images for topic
-      getBingImages({ query: props.metadata.topic, count: 3 }),
+      getGoogleImages({ query: props.metadata.topic, count: 3 }),
     ]);
 
     return {

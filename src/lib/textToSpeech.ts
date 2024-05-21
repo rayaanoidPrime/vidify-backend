@@ -8,49 +8,25 @@ import {
   uploadToFirebase,
 } from "./firebase/utils";
 import { uploadUncompressedAudio } from "./cloudinary/utils";
+import { createClient } from "@deepgram/sdk";
 
-const client = new textToSpeech.TextToSpeechClient({
-  credentials: {
-    private_key: process.env.GOOGLE_CLOUD_PRIVATE_KEY,
-    client_email: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
-    client_id: process.env.GOOGLE_CLOUD_CLIENT_ID,
-  },
-});
+const deepgram = createClient(process.env.DEEPGRAM_API_KEY);
+// const client = new textToSpeech.TextToSpeechClient({
+//   credentials: {
+//     private_key: process.env.GOOGLE_CLOUD_PRIVATE_KEY,
+//     client_email: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
+//     client_id: process.env.GOOGLE_CLOUD_CLIENT_ID,
+//   },
+// });
 
 const voices = {
-  male: [
-    {
-      name: "en-IN-Standard-C",
-      languageCode: "en-IN",
-      pitch: 0.4,
-      speakingRate: 0.89,
-    },
-    {
-      name: "en-US-Standard-D",
-      languageCode: "en-US",
-      pitch: 1,
-      speakingRate: 1,
-    },
-  ],
-  female: [
-    {
-      name: "en-IN-Standard-D",
-      languageCode: "en-IN",
-      pitch: 0,
-      speakingRate: 0.89,
-    },
-    {
-      name: "en-US-Standard-F",
-      languageCode: "en-US",
-      pitch: 0.2,
-      speakingRate: 1,
-    },
-  ],
+  male: ["aura-orion-en", "aura-perseus-en"],
+  female: ["aura-asteria-en", "aura-luna-en", "aura-athena-en"],
 } as const;
 
 const preferredVoice = {
   male: voices.male[1],
-  female: voices.female[1],
+  female: voices.female[0],
 } as const;
 
 export async function createTTSAudio({
@@ -74,7 +50,7 @@ export async function createTTSAudio({
   // const audioContentsHash = md5(ssml ? ssml : text);
   const audioContentsHash = md5(text);
 
-  const filePath = `${fileDirName}/${preferredVoice[gender].name}-${audioContentsHash}.mp3`;
+  const filePath = `${fileDirName}/${preferredVoice[gender]}-${audioContentsHash}.mp3`;
   let firebaseURL = "";
   var fullPathOfUploadedFile = "";
 
@@ -85,36 +61,45 @@ export async function createTTSAudio({
   } else {
     // Performs the text-to-speech request
     // console.log("🎤 Trying to create audio, with filePath: ", filePath);
-    const [response] = await client.synthesizeSpeech({
+    const response = await deepgram.speak.request(
       // Set Raw text or ideally SSML (recommended)
-      input: {
+      {
         // ssml,
         text,
       },
+      { model: preferredVoice[gender], encoding: "mp3" }
       // Set the language and voice.
-      voice: {
-        name: preferredVoice[gender].name,
-        languageCode: preferredVoice[gender].languageCode,
-      },
+      // voices: {
+      //   name: preferredVoice[gender].name,
+      //   languageCode: preferredVoice[gender].languageCode,
+      // },
       // select the type of audio encoding
 
-      audioConfig: {
-        // audioEncoding: "MP3",
-        audioEncoding: "LINEAR16",
-        effectsProfileId: ["large-home-entertainment-class-device"],
-        pitch: preferredVoice[gender].pitch,
-        speakingRate: preferredVoice[gender].speakingRate,
-      },
-    });
-
-    // Upload the file to firebase
-    const fileUploaded = await uploadToFirebase(
-      response.audioContent as Uint8Array,
-      filePath
+      // audioConfig: {
+      //   // audioEncoding: "MP3",
+      //   audioEncoding: "LINEAR16",
+      //   effectsProfileId: ["large-home-entertainment-class-device"],
+      //   pitch: preferredVoice[gender].pitch,
+      //   speakingRate: preferredVoice[gender].speakingRate,
+      // },
     );
 
+    const stream = await response.getStream();
+    const headers = await response.getHeaders();
+
+    if (stream) {
+      const buffer = await getAudioBuffer(stream);
+      const fileUploaded = await uploadToFirebase(
+        buffer as Uint8Array,
+        filePath
+      );
+      fullPathOfUploadedFile = fileUploaded.metadata.fullPath; // for ex: tts-audio-files/31-DECEMBER-2022.mp3
+    } else {
+      console.error("Error generating audio:", stream);
+    }
+    // Upload the file to firebase
+
     // get full path in the bucket, store in the function scope by using `var`.
-    fullPathOfUploadedFile = fileUploaded.metadata.fullPath; // for ex: tts-audio-files/31-DECEMBER-2022.mp3
     // console.log("🏆 File uploaded at: ", fullPathOfUploadedFile);
 
     // fetch and return the URL
@@ -152,6 +137,25 @@ const isAudioAlreadySynthesized = async (filePath: string) => {
   return result;
 }; // return url if present, or else false
 
+// helper function to convert stream to audio buffer
+const getAudioBuffer = async (response) => {
+  const reader = response.getReader();
+  const chunks = [];
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    chunks.push(value);
+  }
+
+  const dataArray = chunks.reduce(
+    (acc, chunk) => Uint8Array.from([...acc, ...chunk]),
+    new Uint8Array(0)
+  );
+
+  return Buffer.from(dataArray.buffer);
+};
 export interface CreatedTTSAudioData {
   url: string;
   duration: number;

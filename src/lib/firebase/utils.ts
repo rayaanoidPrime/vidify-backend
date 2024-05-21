@@ -5,7 +5,7 @@ import {
   uploadBytes,
   deleteObject,
 } from "firebase/storage";
-import { paidApp } from "./index";
+import { freeApp } from "./index";
 
 // Initialize Firebase
 
@@ -14,7 +14,7 @@ export const uploadToFirebase = async (
   filePath: string
 ) => {
   // init firebase storage
-  const storage = getStorage(paidApp);
+  const storage = getStorage(freeApp);
 
   // make a reference for file to upload
   const storageRef = ref(storage, filePath);
@@ -30,7 +30,7 @@ export const createFirebaseUrl = async (
   fullPathOfFile: string
 ): Promise<string> => {
   // init firebase storage
-  const storage = getStorage(paidApp);
+  const storage = getStorage(freeApp);
 
   // Return download URL
   const url = await getDownloadURL(ref(storage, fullPathOfFile));
@@ -42,7 +42,7 @@ export const doesFileExist = async (
 ): Promise<{ existingURL: string; exists: boolean }> => {
   try {
     // init firebase storage
-    const storage = getStorage(paidApp);
+    const storage = getStorage(freeApp);
 
     // Try getting download URL
     const existingURL = await getDownloadURL(ref(storage, filePath));
@@ -57,7 +57,7 @@ export const doesFileExist = async (
 export const deleteFile = async (fullPathOfFile: string): Promise<void> => {
   try {
     // init firebase storage
-    const storage = getStorage(paidApp);
+    const storage = getStorage(freeApp);
 
     const fileToDeleteRef = ref(storage, fullPathOfFile);
 

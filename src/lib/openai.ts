@@ -9,6 +9,7 @@ import dotenv from "dotenv";
 import { checkValidJson, extractJson } from "./openai_utils";
 import dJSON from "dirty-json";
 import { getPrompts } from "./upstash";
+import { getAnthropicChatResponse } from "./anthropic";
 dotenv.config();
 
 const configuration = new Configuration({ apiKey: process.env.OPENAI_API_KEY });
@@ -78,8 +79,9 @@ export async function getVideoMetadata(
   );
 
   const messages: ChatCompletionRequestMessage[] = [
-    { role: "system", content: prompts.videoMetadata_system },
     { role: "user", content: userPrompt },
+    { role: "assistant", content: prompts.videoMetadata_system },
+    ,
   ];
 
   try {
@@ -89,7 +91,7 @@ export async function getVideoMetadata(
     // console.log(`🚨 CHECKING SYSTEM PROMPT: ${messages[0].content}`);
     // console.log(`🚨 CHECKING USER PROMPT: ${messages[1].content}`);
 
-    const response = await getAIChatResponse(messages, userId);
+    const response = await getAnthropicChatResponse(messages, userId);
 
     const extractedJson = extractJson(response);
 
@@ -138,15 +140,15 @@ export async function getTalkingPointForIntro(
     .replace("{replaceMe.contentsOfVideo}", contentsOfVideo);
 
   const messages: ChatCompletionRequestMessage[] = [
-    { role: "system", content: prompts.talkingPoints_system },
     { role: "user", content: userPrompt },
+    { role: "system", content: prompts.intro_system },
   ];
 
   try {
     tryCount = tryCount + 1;
     console.info(`Getting Intro #${tryCount} TRY!`);
 
-    const response = await getAIChatResponse(messages, userId);
+    const response = await getAnthropicChatResponse(messages, userId);
     const extractedJson = extractJson(response);
 
     const isJSONValid = await checkValidJson(extractedJson);
@@ -195,17 +197,15 @@ export async function getTalkingPoints(
     .replace("{replaceMe.referenceData}", videoData.referenceData);
 
   const messages: ChatCompletionRequestMessage[] = [
-    { role: "system", content: prompts.talkingPoints_system },
     { role: "user", content: userPrompt },
+    { role: "system", content: prompts.talkingPoints_system },
   ];
 
   try {
     tryCount = tryCount + 1;
     console.info(`Getting Talking Points #${tryCount} TRY!`);
 
-    const response = await getAIChatResponse(messages, videoData.userId, {
-      temperature: 0.5,
-    });
+    const response = await getAnthropicChatResponse(messages, videoData.userId);
     const extractedJson = extractJson(response);
 
     const isJSONValid = await checkValidJson(extractedJson);
@@ -244,17 +244,18 @@ export async function getTitlesFromData(
   );
 
   const messages: ChatCompletionRequestMessage[] = [
-    { role: "system", content: prompts.talkingPoints_system },
     { role: "user", content: userPrompt },
+    { role: "system", content: prompts.titles_system },
   ];
 
   try {
     tryCount = tryCount + 1;
     console.info(`Getting Titles #${tryCount} TRY!`);
 
-    const response = await getAIChatResponse(messages, userId);
+    const response = await getAnthropicChatResponse(messages, userId);
     const extractedJson = extractJson(response);
 
+    console.info(response);
     const isJSONValid = await checkValidJson(extractedJson);
 
     if (!isJSONValid) {
@@ -300,15 +301,15 @@ export async function getTableFromData(
   );
 
   const messages: ChatCompletionRequestMessage[] = [
-    { role: "system", content: prompts.talkingPoints_system },
     { role: "user", content: userPrompt },
+    { role: "system", content: prompts.tables_system },
   ];
 
   try {
     tryCount = tryCount + 1;
     console.info(`Getting Table #${tryCount} TRY!`);
 
-    const response = await getAIChatResponse(messages, userId);
+    const response = await getAnthropicChatResponse(messages, userId);
     const extractedJson = extractJson(response);
 
     const isJSONValid = await checkValidJson(extractedJson);
@@ -358,15 +359,15 @@ export async function getTalkingPointForOutro(
   );
 
   const messages: ChatCompletionRequestMessage[] = [
-    { role: "system", content: prompts.talkingPoints_system },
     { role: "user", content: userPrompt },
+    { role: "system", content: prompts.outro_system },
   ];
 
   try {
     tryCount = tryCount + 1;
     console.info(`Getting Outro #${tryCount} TRY!`);
 
-    const response = await getAIChatResponse(messages, userId);
+    const response = await getAnthropicChatResponse(messages, userId);
     const extractedJson = extractJson(response);
 
     const isJSONValid = await checkValidJson(extractedJson);

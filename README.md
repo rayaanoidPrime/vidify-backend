@@ -1,8 +1,8 @@
-# Swiftube Backend
+# vidify Backend
 
-Swiftube is an innovative project that utilizes OpenAI and Remotion to transform content in text format, into polished explainer videos. It uses Google's text-to-speech feature to provide the voice for the video.
+vidify is an innovative project that utilizes OpenAI and Remotion to transform content in text format, into polished explainer videos. It uses Google's text-to-speech feature to provide the voice for the video.
 
-This project is the Express backend. Also checkout the ([frontend](https://github.com/thecmdrunner/swiftube-frontend)).
+This project is the Express backend. Also checkout the ([frontend](https://github.com/thecmdrunner/vidify-frontend)).
 
 # Getting Started
 
@@ -16,7 +16,7 @@ To get started, follow these steps:
 
 ## How it Works
 
-Swiftube works by taking text input (prompt) from the user and utilizing OpenAI's APIs to generate talking points for the video. The script is then passed to Remotion, which generates the actual video with the help of Google's text-to-speech feature. The resulting video is then displayed to the user.
+vidify works by taking text input (prompt) from the user and utilizing OpenAI's APIs to generate talking points for the video. The script is then passed to Remotion, which generates the actual video with the help of Google's text-to-speech feature. The resulting video is then displayed to the user.
 
 ## Contributing
 

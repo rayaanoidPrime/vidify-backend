@@ -1,4 +1,4 @@
-import { paidApp } from "../index";
+import { freeApp } from "../index";
 import {
   collection,
   doc,
@@ -15,9 +15,9 @@ import {
 import dotenv from "dotenv";
 dotenv.config();
 
-const db = getFirestore(paidApp);
+const db = getFirestore(freeApp);
 
-const videoCollection = "swiftube_video";
+const videoCollection = "vidify_video";
 // const videoCollection = "video";
 const videoCollectionRef = collection(db, videoCollection);
 const customerCollection = "clerk_user";
